@@ -160,7 +160,7 @@ procedure RunTests();
 var
   LNum: Integer;
 begin
-  LNum := 02;                         // Set the test number to execute
+  LNum := 01;                         // Set the test number to execute
 
   case LNum of
     01: Test01();                     // Run Test01

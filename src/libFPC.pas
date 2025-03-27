@@ -94,6 +94,7 @@ type
       MajorVer: Cardinal;
       MinorVer: Cardinal;
       PatchVer: Cardinal;
+      ProductName: string;
       Description: string;
       CompanyName: string;
       Copyright: string;
@@ -112,15 +113,19 @@ type
     procedure Header();
     procedure Usage();
     procedure OnCaptureConsole(const ALine: string);
-    function GetCmdLine(): string;
+    function  GetCmdLine(): string;
     procedure CleanCmdLine();
     procedure ClearCache();
     procedure AddToCmdLine(const AMsg: string; const AArgs: array of const);
     function  GetDirective(aLine: string; aDirective: string; var aValue: string): Boolean;
     procedure ProcessDirectives(const AFilename: string);
-    function GenerateSource(const AType: TSourceType; var AOutputFilename: string): Boolean;
+    function  GenerateSource(const AType: TSourceType; var AOutputFilename: string): Boolean;
+    function  UpdateManifest(): Boolean;
+    function  UpdatePayloadIcon(): Boolean;
+    function  UpdatePayloadVersionInfo(): Boolean;
     procedure Print(const AMsg: string; const AArgs: array of const);
     procedure PrintLn(const AMsg: string; const AArgs: array of const);
+
   public
     /// <summary>
     ///   Initializes a new instance of the <c>libFPC</c> core class,
@@ -317,21 +322,22 @@ type
     ///     {==================== [PROJECT DIRECTIVES] =================================}
     ///     {@APPTYPE        CONSOLE} // CONSOLE|GUI
     ///     {@OUTPUTPATH     ".\"}
-    ///     {.@EXEICON       ".\icon.ico"} // remove "." before @, set path to icon
-    ///     {@SEARCHPATH     ".\"} // path1;path2;path3 separated by ";"
-    ///     {@BUILDCONFIG    RELEASE} // DEBUG|RELEASE
+    ///     {.@EXEICON       ".\main.ico"} // remove "." before @, set path to icon
+    ///     {@SEARCHPATH     ".\"} // path1;path2;path3 seperated by ";"
+    ///     {@BUILDCONFIG    DEBUG} // DEBUG|RELEASE
     ///     {@ADDVERSIONINFO NO} // YES|NO
     ///     {@MAJORVER       1} // valid numerical value 0-n
     ///     {@MINORVER       0} // valid numerical value 0-n
     ///     {@PATCHVER       0} // valid numerical value 0-n
+    ///     {@PRODUCTNAME    "Project Name"}
     ///     {@DESCRIPTION    "Your Project"}
     ///     {@COMPANYNAME    "Your Company"}
-    ///     {@COPYRIGHT      "Copyright © 2024-present Your Company™"}
+    ///     {@COPYRIGHT      "Copyright © 2025-present Your Company™"}
     ///     {@TRADEMARK      "All Rights Reserved."}
     ///     {@COMMENT        "http://yourcompany.com"}
     ///     {===========================================================================}
     ///     </code>
-    ///   - These directives correspond to various Free Pascal compiler options and settings:
+    ///     - These directives correspond to various Free Pascal compiler options and settings:
     ///     - <c>{@APPTYPE}</c>: Specifies the application type, such as CONSOLE or GUI. This aligns with the <c>{$APPTYPE}</c> compiler directive. [Compiler Directives - Free Pascal](https://www.freepascal.org/docs-html/prog/progch1.html)
     ///     - <c>{@OUTPUTPATH}</c>: Sets the directory for the compiled output files.
     ///     - <c>{@EXEICON}</c>: Defines the path to the application's icon file.
@@ -507,6 +513,12 @@ begin
       end
     else
 
+    if GetDirective(LLine, '@PRODUCTNAME', LValue) then
+      begin
+        FProject.ProductName := LValue;
+      end
+    else
+
     if GetDirective(LLine, '@DESCRIPTION', LValue) then
       begin
         FProject.Description := LValue;
@@ -564,6 +576,16 @@ begin
   FCacheDir := TPath.Combine(lfpGetEXEPath(), 'cache');
   FOutputFilename := '';
   FModualType := omUnknown;
+  FProject.MajorVer := 1;
+  FProject.MinorVer := 0;
+  FProject.PatchVer := 0;
+  FProject.ProductName := 'Your Project Name';
+  FProject.Description := 'Your Product Description';
+  FProject.CompanyName := 'Your Company Name';
+  FProject.Copyright := 'Copyright (c) 2025';
+  FProject.Trademark := 'All Rights Reserved.';
+  FProject.Comment := 'Your Comments';
+
   CleanCmdLine();
   ClearCache();
 end;
@@ -806,6 +828,7 @@ begin
     LDir.PushFilePath(LProjectFilename);
     try
       FExitCode := 0;
+      FOutputFilename := '';
       lfpCaptureConsoleOutput('libFPC', PChar(LCmd), nil, FExitCode, Self, TCompiler_OnConsoleEvent);
     finally
       LDir.Pop();
@@ -827,7 +850,10 @@ begin
               FModualType := omDLL;
 
             // set version info here
-
+            UpdateManifest();
+            UpdatePayloadIcon();
+            if FProject.AddVersionInfo then
+              UpdatePayloadVersionInfo();
           end;
         end
       else
@@ -856,6 +882,35 @@ begin
   Result := FOutputFilename;
 end;
 
+function TlibFPC.UpdateManifest(): Boolean;
+begin
+  Result := False;
+  if FModualType <> omEXE then Exit;
+  if not TFile.Exists(FOutputFilename) then Exit;
+  Result := lfpAddResManifestFromResource('a439e025cc1f4759a38224d6175931b6', FOutputFilename)
+end;
+
+function TlibFPC.UpdatePayloadIcon(): Boolean;
+begin
+  Result := False;
+  if FModualType <> omEXE then Exit;
+  if not TFile.Exists(FOutputFilename) then Exit;
+  if not TFile.Exists(FProject.ExeIconFilename) then Exit;
+  if not lfpIsValidWin64PE(FOutputFilename) then Exit;
+  lfpUpdateIconResource(FOutputFilename, FProject.ExeIconFilename);
+  Result := True;
+end;
+
+function TlibFPC.UpdatePayloadVersionInfo(): Boolean;
+begin
+  Result := False;
+  if not TFile.Exists(FOutputFilename) then Exit;
+  if not lfpIsValidWin64PE(FOutputFilename) then Exit;
+  lfpUpdateVersionInfoResource(FOutputFilename, FProject.MajorVer, FProject.MinorVer, FProject.PatchVer, FProject.ProductName,
+    FProject.Description, TPath.GetFileName(FOutputFilename), FProject.CompanyName, FProject.Copyright);
+  Result := True;
+end;
+
 function TlibFPC.GenerateSource(const AType: TSourceType; var AOutputFilename: string): Boolean;
 const
   CProjectDirectives =
@@ -863,16 +918,17 @@ const
   {==================== [PROJECT DIRECTIVES] =================================}
   {@APPTYPE        CONSOLE} // CONSOLE|GUI
   {@OUTPUTPATH     ".\"}
-  {.@EXEICON       ".\icon.ico"} // remove "." before @, set path to icon
+  {.@EXEICON       ".\main.ico"} // remove "." before @, set path to icon
   {@SEARCHPATH     ".\"} // path1;path2;path3 seperated by ";"
   {@BUILDCONFIG    DEBUG} // DEBUG|RELEASE
   {@ADDVERSIONINFO NO} // YES|NO
   {@MAJORVER       1} // valid numerical value 0-n
   {@MINORVER       0} // valid numerical value 0-n
   {@PATCHVER       0} // valid numerical value 0-n
+  {@PRODUCTNAME    "Project Name"}
   {@DESCRIPTION    "Your Project"}
   {@COMPANYNAME    "Your Company"}
-  {@COPYRIGHT      "Copyright © 2024-present Your Company™"}
+  {@COPYRIGHT      "Copyright © 2025-present Your Company™"}
   {@TRADEMARK      "All Rights Reserved."}
   {@COMMENT        "http://yourcompany.com"}
   {===========================================================================}

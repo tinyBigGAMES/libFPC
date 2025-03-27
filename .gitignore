@@ -83,3 +83,5 @@ bin/test1.pas
 zip_latest_commit.cmd
 bin/test2.pas
 bin/test3.pas
+bin/main.ico
+libFPC-main.zip

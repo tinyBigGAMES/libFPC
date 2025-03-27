@@ -28,7 +28,7 @@ Getting started with `libFPC` is quick and easy:
 
 1. **Download** `libFPC` from the [github](https://github.com/tinyBigGAMES/libFPC/archive/refs/heads/main.zip).  You can also fork the repo if you wish to make contributions.
 2. **Add** `libFPC` to your `uses` clause.  
-3. **Start Coding!** Enjoy simplified JSON handling with method chaining.  
+3. **Start Coding!** libFPC brings the power of the FreePascal compiler into the hands of your application.
 
 ## 🚀 Basic Usage
 
@@ -62,18 +62,19 @@ libFPC supports special **inline directives** in the main Pascal source file to 
 
 ```pascal
 {==================== [PROJECT DIRECTIVES] =================================}
-{@APPTYPE        CONSOLE}              // CONSOLE | GUI
-{@OUTPUTPATH     ".\"}                 // Output directory
-{.@EXEICON       ".\icon.ico"}         // Optional icon (remove '.' before @ to activate)
-{@SEARCHPATH     ".\"}                 // Additional unit search paths
-{@BUILDCONFIG    RELEASE}              // DEBUG | RELEASE
-{@ADDVERSIONINFO NO}                   // YES | NO
-{@MAJORVER       1}
-{@MINORVER       0}
-{@PATCHVER       0}
+{@APPTYPE        CONSOLE} // CONSOLE|GUI
+{@OUTPUTPATH     ".\"}
+{.@EXEICON       ".\main.ico"} // remove "." before @, set path to icon
+{@SEARCHPATH     ".\"} // path1;path2;path3 seperated by ";"
+{@BUILDCONFIG    DEBUG} // DEBUG|RELEASE
+{@ADDVERSIONINFO NO} // YES|NO
+{@MAJORVER       1} // valid numerical value 0-n
+{@MINORVER       0} // valid numerical value 0-n
+{@PATCHVER       0} // valid numerical value 0-n
+{@PRODUCTNAME    "Project Name"}
 {@DESCRIPTION    "Your Project"}
 {@COMPANYNAME    "Your Company"}
-{@COPYRIGHT      "Copyright © 2024-present Your Company™"}
+{@COPYRIGHT      "Copyright © 2025-present Your Company™"}
 {@TRADEMARK      "All Rights Reserved."}
 {@COMMENT        "http://yourcompany.com"}
 {===========================================================================}

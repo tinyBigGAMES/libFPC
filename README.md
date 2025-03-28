@@ -112,7 +112,7 @@ We welcome contributions to **libFPC**! 🚀
 ### 🏆 Contributors
 
 <a href="https://github.com/tinyBigGAMES/libFPC/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=tinyBigGAMES/libFPC&max=250&columns=10&anon=1" />
+  <img src="https://contrib.rocks/image?repo=tinyBigGAMES/libFPC&max=500&columns=20&anon=1" />
 </a>
 
 ## 📜 License
